@@ -1,17 +1,24 @@
 <?php
 
-use Illuminate\Http\Request;
+/**
+ * Laravel - A PHP Framework For Web Artisans
+ *
+ * @package  Laravel
+ */
 
-define('LARAVEL_START', microtime(true));
+require __DIR__.'/../vendor/autoload.php'; // Autoload Composer dependencies
 
-// Determine if the application is in maintenance mode...
-if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php')) {
-    require $maintenance;
-}
+// Bootstrap the Laravel application
+$app = require_once __DIR__.'/../bootstrap/app.php';
 
-// Register the Composer autoloader...
-require __DIR__.'/../vendor/autoload.php';
+// Handle the request and send a response back
+$kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+$response = $kernel->handle(
+    $request = Illuminate\Http\Request::capture()
+);
 
-// Bootstrap Laravel and handle the request...
-(require_once __DIR__.'/../bootstrap/app.php')
-    ->handleRequest(Request::capture());
+// Send the response to the browser
+$response->send();
+
+// Terminate the request
+$kernel->terminate($request, $response);
