@@ -3,22 +3,27 @@ name: Deploy to Server
 on:
   push:
     branches:
-      - main # Replace this with your branch name if needed
+      - main # Adjust this to your deployment branch if needed
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    # Step 1: Check out the code
+    # Step 1: Checkout the code
     - name: Checkout code
       uses: actions/checkout@v3
 
-    # Step 2: Set up SSH
-    - name: Setup SSH
-      uses: webfactory/ssh-agent@v0.5.3
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+    # Step 2: Add SSH Key to Agent
+    - name: Add SSH Key to Agent
+      run: |
+        # Write the SSH private key to a file
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key
+        chmod 600 private_key
+        # Start the SSH agent
+        eval $(ssh-agent -s)
+        # Add the private key to the agent
+        ssh-add private_key
 
     # Step 3: Deploy to the server
     - name: Deploy to Server
@@ -32,4 +37,5 @@ jobs:
         php artisan config:clear
         php artisan route:cache
         EOF
+
 
