@@ -25,57 +25,26 @@ jobs:
         # Add the private key to the agent
         ssh-add private_key
 
-    # Step 3: Test SSH Connection with verbose output (Optional, for debugging)
+    # Step 3: Test SSH connection (Optional, for debugging)
     - name: Test SSH Connection
       run: |
-        ssh -v -o StrictHostKeyChecking=no hadis@116.203.213.63 "echo SSH connected"
+        ssh -o StrictHostKeyChecking=no hadis@116.203.213.63 "echo SSH connected"
 
-    # Step 4: Deploy to the server with more verbose logging
+    # Step 4: Deploy to the server
     - name: Deploy to Server
       run: |
-        ssh -v -o StrictHostKeyChecking=no hadis@116.203.213.63 << 'EOF'
-        echo "Starting deployment..."
-        
-        # Check if the directory exists
-        if [ ! -d "$HOME/example-app" ]; then
-          echo "Directory ~/example-app does not exist. Exiting."
-          exit 1
-        fi
-
-        echo "Directory ~/example-app exists. Proceeding..."
-
-        # Check for required dependencies
-        echo "Checking for Git installation"
-        git --version || { echo "Git not installed. Exiting."; exit 1; }
-
-        echo "Checking for Composer installation"
-        composer --version || { echo "Composer not installed. Exiting."; exit 1; }
-
-        echo "Checking for PHP installation"
-        php --version || { echo "PHP not installed. Exiting."; exit 1; }
-
-        # Navigate to the project directory
-        cd ~/example-app || { echo "Failed to change directory"; exit 1; }
-
-        echo "Checking out public/index.php to ensure it's not changed"
+        ssh -o StrictHostKeyChecking=no hadis@116.203.213.63 << 'EOF'
+        cd example-app
+        # Checkout public/index.php to ensure it's not changed
         git checkout -- public/index.php
-
-        echo "Resetting the repository to discard local changes"
+        # Reset the repository to discard any local changes
         git reset --hard
-
-        echo "Pulling latest changes from the main branch"
+        # Pull the latest changes from the main branch
         git pull origin main
-
-        echo "Running composer install"
+        # Run deployment commands
         composer install --no-dev --optimize-autoloader
-
-        echo "Running migrations"
         php artisan migrate --force
-
-        echo "Clearing cache"
         php artisan cache:clear
         php artisan config:clear
         php artisan route:cache
-
-        echo "Deployment completed successfully."
         EOF
