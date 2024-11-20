@@ -25,32 +25,37 @@ jobs:
         # Add the private key to the agent
         ssh-add private_key
 
-    # Step 3: Test SSH connection (Optional, for debugging)
+    # Step 3: Test SSH connection with verbose output (Optional, for debugging)
     - name: Test SSH Connection
       run: |
-        ssh -o StrictHostKeyChecking=no hadis@116.203.213.63 "echo SSH connected"
+        ssh -v -o StrictHostKeyChecking=no hadis@116.203.213.63 "echo SSH connected"
 
-    # Step 4: Deploy to the server
+    # Step 4: Deploy to the server with more verbose logging
     - name: Deploy to Server
       run: |
-        ssh -o StrictHostKeyChecking=no hadis@116.203.213.63 << 'EOF'
-        # Ensure we're in the correct directory
-        cd ~/example-app || exit 1
+        ssh -v -o StrictHostKeyChecking=no hadis@116.203.213.63 << 'EOF'
+        echo "Starting deployment..."
+        cd ~/example-app || { echo "Failed to change directory"; exit 1; }
 
-        # Checkout public/index.php to ensure it's not changed
+        echo "Checking out public/index.php to ensure it's not changed"
         git checkout -- public/index.php
-        # Reset the repository to discard any local changes
+
+        echo "Resetting the repository to discard local changes"
         git reset --hard
-        # Pull the latest changes from the main branch
+
+        echo "Pulling latest changes from the main branch"
         git pull origin main
 
-        # Run deployment commands
+        echo "Running composer install"
         composer install --no-dev --optimize-autoloader
+
+        echo "Running migrations"
         php artisan migrate --force
+
+        echo "Clearing cache"
         php artisan cache:clear
         php artisan config:clear
         php artisan route:cache
+
+        echo "Deployment completed successfully."
         EOF
-
-
-
