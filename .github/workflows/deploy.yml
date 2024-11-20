@@ -21,23 +21,29 @@ jobs:
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key
         chmod 600 private_key
         # Start the SSH agent
-        eval $(ssh-agent -s)
+        eval "$(ssh-agent -s)"
         # Add the private key to the agent
         ssh-add private_key
 
-    # Step 3: Test SSH connection (Optional, for debugging)
+    # Step 3: Add Server to Known Hosts
+    - name: Add Server to Known Hosts
+      run: |
+        # Add the server's SSH host key to avoid strict host key checking issues
+        mkdir -p ~/.ssh
+        ssh-keyscan -H 116.203.213.63 >> ~/.ssh/known_hosts
+
+    # Step 4: Test SSH connection (Optional, for debugging)
     - name: Test SSH Connection
       run: |
-        ssh -o StrictHostKeyChecking=no hadis@116.203.213.63 "echo SSH connected"
+        ssh -i private_key -o StrictHostKeyChecking=no hadis@116.203.213.63 "echo SSH connected"
 
-    # Step 4: Deploy to the server
+    # Step 5: Deploy to the server
     - name: Deploy to Server
       run: |
-        ssh -o StrictHostKeyChecking=no hadis@116.203.213.63 << 'EOF'
+        ssh -i private_key -o StrictHostKeyChecking=no hadis@116.203.213.63 << 'EOF'
         cd example-app
-        # Checkout public/index.php to ensure it's not changed
+        # Ensure the repository is in a clean state
         git checkout -- public/index.php
-        # Reset the repository to discard any local changes
         git reset --hard
         # Pull the latest changes from the main branch
         git pull origin main
@@ -48,3 +54,4 @@ jobs:
         php artisan config:clear
         php artisan route:cache
         EOF
+
