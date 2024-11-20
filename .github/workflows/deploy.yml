@@ -3,7 +3,10 @@ name: Deploy to Server
 on:
   push:
     branches:
-      - main # Adjust this to your deployment branch if needed
+      - '*'  # This will trigger the workflow on every push to any branch
+    # Optionally, you can trigger it on all tags as well:
+    # tags:
+    #   - '*'
 
 jobs:
   deploy:
@@ -37,5 +40,6 @@ jobs:
         php artisan config:clear
         php artisan route:cache
         EOF
+
 
 
