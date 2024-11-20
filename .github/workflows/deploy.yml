@@ -3,10 +3,7 @@ name: Deploy to Server
 on:
   push:
     branches:
-      - '*'  # This will trigger the workflow on every push to any branch
-    # Optionally, you can trigger it on all tags as well:
-    # tags:
-    #   - '*'
+      - '*'  # Trigger on any branch push
 
 jobs:
   deploy:
@@ -28,12 +25,23 @@ jobs:
         # Add the private key to the agent
         ssh-add private_key
 
-    # Step 3: Deploy to the server
+    # Step 3: Test SSH connection (Optional, for debugging)
+    - name: Test SSH Connection
+      run: |
+        ssh -o StrictHostKeyChecking=no hadis@116.203.213.63 "echo SSH connected"
+
+    # Step 4: Deploy to the server
     - name: Deploy to Server
       run: |
         ssh -o StrictHostKeyChecking=no hadis@116.203.213.63 << 'EOF'
         cd example-app
+        # Checkout public/index.php to ensure it's not changed
+        git checkout -- public/index.php
+        # Reset the repository to discard any local changes
+        git reset --hard
+        # Pull the latest changes from the main branch
         git pull origin main
+        # Run deployment commands
         composer install --no-dev --optimize-autoloader
         php artisan migrate --force
         php artisan cache:clear
