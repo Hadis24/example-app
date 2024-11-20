@@ -34,13 +34,16 @@ jobs:
     - name: Deploy to Server
       run: |
         ssh -o StrictHostKeyChecking=no hadis@116.203.213.63 << 'EOF'
-        cd example-app
+        # Ensure we're in the correct directory
+        cd ~/example-app || exit 1
+
         # Checkout public/index.php to ensure it's not changed
         git checkout -- public/index.php
         # Reset the repository to discard any local changes
         git reset --hard
         # Pull the latest changes from the main branch
         git pull origin main
+
         # Run deployment commands
         composer install --no-dev --optimize-autoloader
         php artisan migrate --force
