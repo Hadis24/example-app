@@ -10,47 +10,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Step 1: Checkout the code
-    - name: Checkout code
-      uses: actions/checkout@v3
+      # Step 1: Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # Step 2: Add SSH Key to Agent
-    - name: Add SSH Key to Agent
-      run: |
-        # Write the SSH private key to a file
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key
-        chmod 600 private_key
-        # Start the SSH agent
-        eval $(ssh-agent -s)
-        # Add the private key to the agent
-        ssh-add private_key
+      # Step 2: Add SSH Key to Agent
+      - name: Add SSH Key to Agent
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key
+          chmod 600 private_key
+          eval $(ssh-agent -s)
+          ssh-add private_key
 
-    # Step 3: Test SSH connection
-    - name: Test SSH Connection
-      run: |
-        ssh -i private_key -o StrictHostKeyChecking=no hadis@116.203.213.63 "echo SSH connected"
+      # Step 3: Deploy to the server
+      - name: Deploy to Server
+        run: |
+          ssh -i private_key -o StrictHostKeyChecking=no hadis@116.203.213.63 << 'EOF'
+          cd example-app
+          git pull origin main
+          # Install PHP extensions and dependencies
+          sudo apt-get update
+          sudo apt-get install -y php-intl
+          rm -rf vendor/
+          composer install --no-dev --optimize-autoloader
+          # Build frontend assets
+          npm install
+          npm run build
+          # Run Laravel deployment commands
+          php artisan migrate --force
+          php artisan cache:clear
+          php artisan config:clear
+          php artisan route:cache
+          EOF
 
-    # Step 4: Deploy to the server
-    - name: Deploy to Server
-      run: |
-        ssh -i private_key -o StrictHostKeyChecking=no hadis@116.203.213.63 << 'EOF'
-        cd example-app
-        # Ensure PHP extensions are installed
-        sudo apt-get update
-        sudo apt-get install -y php-intl
-        # Reset and pull latest changes
-        git checkout -- public/index.php
-        git reset --hard
-        git pull origin main
-        # Remove and reinstall Composer dependencies
-        rm -rf vendor/
-        composer install --no-dev --optimize-autoloader
-        # Build frontend assets
-        npm install
-        npm run build
-        # Run Laravel deployment commands
-        php artisan migrate --force
-        php artisan cache:clear
-        php artisan config:clear
-        php artisan route:cache
-        EOF
